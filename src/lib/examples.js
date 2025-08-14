@@ -23,7 +23,7 @@ function fibonacci(n) {
 }
 
 // Calculate fibonacci(5)
-fibonacci(5);`
+fibonacci(5);`,
   },
 
   factorial: {
@@ -50,76 +50,128 @@ function factorial(n) {
 }
 
 // Calculate factorial(5)
-factorial(5);`
+factorial(5);`,
   },
 
   subsets: {
     title: "Generate Subsets",
-    description: "Generate all possible subsets of an array using backtracking",
+    description:
+      "Generate all possible subsets of an array using backtracking (Enhanced)",
     category: "backtracking",
     difficulty: "Intermediate",
     pseudocode: `function generateSubsets(nums):
-  result = []
-  backtrack(nums, [], 0, result)
-  return result
+    print "Starting subset generation..."
+    result = []
+    backtrack(nums, [], 0)
+    print "All subsets generated:", result
+    return result
 
-function backtrack(nums, current, start, result):
-  result.append(current[:])
-  for i in range(start, len(nums)):
-    current.append(nums[i])
-    backtrack(nums, current, i + 1, result)
-    current.pop()`,
-    code: `// Generate all subsets using backtracking
+function backtrack(nums, current, start):
+    print "Adding subset:", current
+    add current to result
+
+    for i from start to len(nums) - 1:
+        print "Including element:", nums[i]
+        add nums[i] to current
+        backtrack(nums, current, i + 1)
+        print "Backtracking, removing:", nums[i]
+        remove nums[i] from current
+`,
+    code: `// Generate all subsets using backtracking - ENHANCED VERSION
 function generateSubsets(nums) {
   const result = [];
+  const totalPossibleSubsets = Math.pow(2, nums.length); // 2^n subsets possible
+  
+  api.enter('generateSubsets', { 
+    nums, 
+    totalPossibleSubsets,
+    inputSize: nums.length 
+  });
   
   function backtrack(nums, current, start) {
-    api.enter('backtrack', { nums, current, start });
+    api.enter('backtrack', { 
+      nums, 
+      current: [...current], 
+      start,
+      subsetsFoundSoFar: result.length,
+      remainingToFind: totalPossibleSubsets - result.length
+    });
     
+    // Add current subset to result
     result.push([...current]);
+    api.set({ 
+      subsetsGenerated: result.length,
+      totalPossibleSubsets,
+      progress: \`\${result.length}/\${totalPossibleSubsets}\`,
+      currentSubset: [...current],
+      percentComplete: Math.round((result.length / totalPossibleSubsets) * 100)
+    });
     
     for (let i = start; i < nums.length; i++) {
+      // Add element to current subset
       current.push(nums[i]);
+      api.set({ 
+        current: [...current], 
+        addedElement: nums[i], 
+        i,
+        action: \`Added \${nums[i]} to subset\`
+      });
+      
+      // Recursively generate subsets
       backtrack(nums, current, i + 1);
-      current.pop();
+      
+      // Remove element (backtrack)
+      const removed = current.pop();
+      api.set({ 
+        current: [...current], 
+        removedElement: removed,
+        action: \`Removed \${removed} from subset (backtracking)\`
+      });
     }
     
     api.exit();
   }
   
   backtrack(nums, [], 0);
+  
+  api.set({ 
+    finalResult: result,
+    totalSubsetsGenerated: result.length,
+    allSubsets: result
+  });
+  api.exit(result);
+  
   return result;
 }
 
 // Generate subsets of [1, 2, 3]
-generateSubsets([1, 2, 3]);`
+// Expected: 2^3 = 8 subsets total
+generateSubsets([1, 2, 3]);`,
   },
 
+  // Enhanced Algorithms with Proper Variable Tracking
+
+  // ===============================
+  // N-QUEENS PROBLEM - ENHANCED
+  // ===============================
   nQueens: {
     title: "N-Queens Problem",
-    description: "Place N queens on an NxN chessboard so no two queens threaten each other",
+    description:
+      "Place N queens on an NxN chessboard so no two queens threaten each other",
     category: "backtracking",
     difficulty: "Advanced",
-    pseudocode: `function solveNQueens(n):
-  board = create empty n×n board
-  result = []
-  solve(board, 0, result)
-  return result
-
-function solve(board, col, result):
-  if col >= n:
-    add solution to result
-    return
-  
-  for row in range(n):
-    if isValid(board, row, col):
-      board[row][col] = 'Q'
-      solve(board, col + 1, result)
-      board[row][col] = '.'`,
-    code: `// N-Queens problem using backtracking
+    code: `// N-Queens problem using backtracking - ENHANCED
 function solveNQueens(n) {
   const board = Array(n).fill().map(() => Array(n).fill('.'));
   const result = [];
+  const totalPossiblePositions = n * n;
+  
+  api.enter('solveNQueens', { 
+    n, 
+    boardSize: \`\${n}x\${n}\`,
+    totalPossiblePositions,
+    expectedSolutions: n === 4 ? 2 : (n === 8 ? 92 : 'unknown')
+  });
   
   function isValid(board, row, col) {
     // Check row
@@ -141,57 +193,113 @@ function solveNQueens(n) {
   }
   
   function solve(board, col) {
-    api.enter('solve', { col });
+    api.enter('solve', { 
+      col,
+      progress: \`Column \${col + 1}/\${n}\`,
+      queensPlaced: col,
+      solutionsFound: result.length,
+      currentBoard: board.map(row => row.join(''))
+    });
     
     if (col >= n) {
-      result.push(board.map(row => row.join('')));
-      api.exit();
-      return;
+      const solution = board.map(row => row.join(''));
+      result.push(solution);
+      api.set({ 
+        foundSolution: true,
+        solutionsFound: result.length,
+        newSolution: solution,
+        boardState: 'COMPLETE'
+      });
+      api.exit(true);
+      return true;
     }
     
+    let validPositionsInCol = 0;
     for (let row = 0; row < n; row++) {
+      api.set({ 
+        tryingRow: row,
+        tryingPosition: \`(\${row}, \${col})\`,
+        checkingConflicts: true
+      });
+      
       if (isValid(board, row, col)) {
+        validPositionsInCol++;
+        
+        // Place queen
         board[row][col] = 'Q';
-        solve(board, col + 1);
+        api.set({ 
+          placedQueen: \`(\${row}, \${col})\`,
+          boardState: board.map(r => r.join('')),
+          queensPlaced: col + 1,
+          action: \`Placed queen at (\${row}, \${col})\`
+        });
+        
+        // Try to place remaining queens
+        if (solve(board, col + 1)) {
+          api.exit(true);
+          return true;
+        }
+        
+        // Backtrack - remove queen
         board[row][col] = '.';
+        api.set({ 
+          removedQueen: \`(\${row}, \${col})\`,
+          boardState: board.map(r => r.join('')),
+          action: \`Removed queen from (\${row}, \${col}) - backtracking\`
+        });
+      } else {
+        api.set({ 
+          invalidPosition: \`(\${row}, \${col})\`,
+          reason: 'Queen would be under attack'
+        });
       }
     }
     
-    api.exit();
+    api.set({ 
+      validPositionsInCol,
+      backtracking: true,
+      reason: validPositionsInCol === 0 ? 'No valid positions in column' : 'All positions tried'
+    });
+    
+    api.exit(false);
+    return false;
   }
   
   solve(board, 0);
+  
+  api.set({ 
+    totalSolutions: result.length,
+    allSolutions: result
+  });
+  api.exit(result);
+  
   return result;
 }
 
 // Solve 4-Queens problem
-solveNQueens(4);`
+solveNQueens(4);`,
   },
 
+  // ===============================
+  // SUDOKU SOLVER - ENHANCED
+  // ===============================
   sudoku: {
     title: "Sudoku Solver",
     description: "Solve a Sudoku puzzle using backtracking",
     category: "backtracking",
     difficulty: "Advanced",
-    pseudocode: `function solveSudoku(board):
-  if solve(board):
-    return board
-  return null
-
-function solve(board):
-  find empty cell (row, col)
-  if no empty cell:
-    return true
-  
-  for num in 1-9:
-    if isValid(board, row, col, num):
-      board[row][col] = num
-      if solve(board):
-        return true
-      board[row][col] = 0
-  return false`,
-    code: `// Sudoku solver using backtracking
+    code: `// Sudoku solver using backtracking - ENHANCED
 function solveSudoku(board) {
+  const totalCells = 81;
+  const emptyCells = board.flat().filter(cell => cell === 0).length;
+  
+  api.enter('solveSudoku', { 
+    totalCells,
+    emptyCells,
+    filledCells: totalCells - emptyCells,
+    completionRate: \`\${Math.round(((totalCells - emptyCells) / totalCells) * 100)}%\`
+  });
+  
   function isValid(board, row, col, num) {
     // Check row
     for (let c = 0; c < 9; c++) {
@@ -216,35 +324,87 @@ function solveSudoku(board) {
   }
   
   function solve(board) {
-    api.enter('solve', { board: JSON.stringify(board) });
+    const currentEmpty = board.flat().filter(cell => cell === 0).length;
+    
+    api.enter('solve', { 
+      emptyCellsRemaining: currentEmpty,
+      progress: \`\${Math.round(((totalCells - currentEmpty) / totalCells) * 100)}% complete\`,
+      boardState: JSON.stringify(board)
+    });
     
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
         if (board[row][col] === 0) {
+          api.set({ 
+            currentCell: \`(\${row}, \${col})\`,
+            tryingNumbers: '1-9',
+            cellsRemaining: currentEmpty
+          });
+          
           for (let num = 1; num <= 9; num++) {
+            api.set({ 
+              tryingNumber: num,
+              atPosition: \`(\${row}, \${col})\`,
+              checkingValidity: true
+            });
+            
             if (isValid(board, row, col, num)) {
+              // Place number
               board[row][col] = num;
+              api.set({ 
+                placedNumber: num,
+                atPosition: \`(\${row}, \${col})\`,
+                action: \`Placed \${num} at (\${row}, \${col})\`,
+                cellsRemaining: currentEmpty - 1
+              });
+              
               if (solve(board)) {
                 api.exit(true);
                 return true;
               }
+              
+              // Backtrack
               board[row][col] = 0;
+              api.set({ 
+                removedNumber: num,
+                fromPosition: \`(\${row}, \${col})\`,
+                action: \`Removed \${num} from (\${row}, \${col}) - backtracking\`
+              });
+            } else {
+              api.set({ 
+                rejectedNumber: num,
+                reason: 'Conflicts with existing numbers'
+              });
             }
           }
+          
+          api.set({ 
+            noValidNumbers: true,
+            backtracking: true
+          });
           api.exit(false);
           return false;
         }
       }
     }
     
+    api.set({ 
+      puzzleSolved: true,
+      finalBoard: board
+    });
     api.exit(true);
     return true;
   }
   
-  if (solve(board)) {
-    return board;
-  }
-  return null;
+  const solved = solve(board);
+  
+  api.set({ 
+    solutionFound: solved,
+    finalResult: solved ? board : null
+  });
+  api.exit(solved ? board : null);
+  
+  return solved ? board : null;
 }
 
 // Example Sudoku board (0 represents empty cells)
@@ -260,41 +420,35 @@ const board = [
   [0,0,0,0,8,0,0,7,9]
 ];
 
-solveSudoku(board);`
+solveSudoku(board);`,
   },
 
+  // ===============================
+  // RAT IN A MAZE - ENHANCED
+  // ===============================
   maze: {
     title: "Rat in a Maze",
-    description: "Find a path from source to destination in a maze using backtracking",
+    description:
+      "Find a path from source to destination in a maze using backtracking",
     category: "backtracking",
     difficulty: "Intermediate",
-    pseudocode: `function solveMaze(maze):
-  path = create empty path
-  if solveMazeUtil(maze, 0, 0, path):
-    return path
-  return null
-
-function solveMazeUtil(maze, row, col, path):
-  if row, col is destination:
-    return true
-  
-  if isValid(maze, row, col):
-    mark cell as visited
-    path.append([row, col])
-    
-    if solveMazeUtil(maze, row+1, col, path):
-      return true
-    if solveMazeUtil(maze, row, col+1, path):
-      return true
-    
-    path.pop()
-    mark cell as unvisited
-  return false`,
-    code: `// Rat in a Maze using backtracking
+    code: `// Rat in a Maze using backtracking - ENHANCED
 function solveMaze(maze) {
   const n = maze.length;
   const path = [];
   const visited = Array(n).fill().map(() => Array(n).fill(false));
+  const totalCells = n * n;
+  const wallCells = maze.flat().filter(cell => cell === 0).length;
+  const pathCells = totalCells - wallCells;
+  
+  api.enter('solveMaze', { 
+    mazeSize: \`\${n}x\${n}\`,
+    totalCells,
+    pathCells,
+    wallCells,
+    startPosition: '(0,0)',
+    endPosition: \`(\${n-1},\${n-1})\`
+  });
   
   function isValid(maze, row, col) {
     return row >= 0 && row < n && col >= 0 && col < n && 
@@ -302,54 +456,98 @@ function solveMaze(maze) {
   }
   
   function solveMazeUtil(maze, row, col) {
-    api.enter('solveMazeUtil', { row, col });
+    const distanceToEnd = Math.abs(row - (n-1)) + Math.abs(col - (n-1));
     
+    api.enter('solveMazeUtil', { 
+      currentPosition: \`(\${row}, \${col})\`,
+      pathLength: path.length,
+      distanceToEnd,
+      visitedCells: visited.flat().filter(v => v).length,
+      currentPath: path.map(p => \`(\${p[0]},\${p[1]})\`).join(' → ')
+    });
+    
+    // Check if we reached the destination
     if (row === n - 1 && col === n - 1) {
       path.push([row, col]);
+      api.set({ 
+        reachedDestination: true,
+        finalPath: path.map(p => \`(\${p[0]},\${p[1]})\`).join(' → '),
+        pathLength: path.length,
+        success: true
+      });
       api.exit(true);
       return true;
     }
     
     if (isValid(maze, row, col)) {
+      // Mark as visited and add to path
       visited[row][col] = true;
       path.push([row, col]);
       
-      // Try moving down
-      if (solveMazeUtil(maze, row + 1, col)) {
-        api.exit(true);
-        return true;
+      api.set({ 
+        visitedPosition: \`(\${row}, \${col})\`,
+        currentPath: path.map(p => \`(\${p[0]},\${p[1]})\`).join(' → '),
+        pathLength: path.length,
+        action: \`Added (\${row}, \${col}) to path\`
+      });
+      
+      // Try all four directions
+      const directions = [
+        { name: 'DOWN', dr: 1, dc: 0 },
+        { name: 'RIGHT', dr: 0, dc: 1 },
+        { name: 'UP', dr: -1, dc: 0 },
+        { name: 'LEFT', dr: 0, dc: -1 }
+      ];
+      
+      for (const dir of directions) {
+        const newRow = row + dir.dr;
+        const newCol = col + dir.dc;
+        
+        api.set({ 
+          tryingDirection: dir.name,
+          targetPosition: \`(\${newRow}, \${newCol})\`,
+          isValidMove: isValid(maze, newRow, newCol)
+        });
+        
+        if (solveMazeUtil(maze, newRow, newCol)) {
+          api.exit(true);
+          return true;
+        }
       }
       
-      // Try moving right
-      if (solveMazeUtil(maze, row, col + 1)) {
-        api.exit(true);
-        return true;
-      }
-      
-      // Try moving up
-      if (solveMazeUtil(maze, row - 1, col)) {
-        api.exit(true);
-        return true;
-      }
-      
-      // Try moving left
-      if (solveMazeUtil(maze, row, col - 1)) {
-        api.exit(true);
-        return true;
-      }
-      
-      path.pop();
+      // Backtrack
+      const removedPos = path.pop();
       visited[row][col] = false;
+      
+      api.set({ 
+        backtracking: true,
+        removedFromPath: \`(\${removedPos[0]}, \${removedPos[1]})\`,
+        newPathLength: path.length,
+        currentPath: path.map(p => \`(\${p[0]},\${p[1]})\`).join(' → ') || 'empty',
+        action: 'Backtracking - removed from path and marked unvisited'
+      });
+    } else {
+      api.set({ 
+        invalidMove: true,
+        reason: row < 0 || row >= n || col < 0 || col >= n ? 'Out of bounds' :
+               maze[row][col] === 0 ? 'Wall cell' : 'Already visited'
+      });
     }
     
     api.exit(false);
     return false;
   }
   
-  if (solveMazeUtil(maze, 0, 0)) {
-    return path;
-  }
-  return null;
+  const solutionFound = solveMazeUtil(maze, 0, 0);
+  
+  api.set({ 
+    solutionExists: solutionFound,
+    finalPath: solutionFound ? path : null,
+    totalSteps: solutionFound ? path.length : 0
+  });
+  api.exit(solutionFound ? path : null);
+  
+  return solutionFound ? path : null;
 }
 
 // Example maze (1 = path, 0 = wall)
@@ -360,107 +558,212 @@ const maze = [
   [1, 1, 1, 1]
 ];
 
-solveMaze(maze);`
+solveMaze(maze);`,
   },
 
+  // ===============================
+  // FIBONACCI WITH MEMOIZATION - ENHANCED
+  // ===============================
   fibonacciDP: {
     title: "Fibonacci with Memoization",
-    description: "Calculate Fibonacci numbers using dynamic programming and memoization",
+    description:
+      "Calculate Fibonacci numbers using dynamic programming and memoization",
     category: "memoization",
     difficulty: "Intermediate",
-    pseudocode: `function fibonacciDP(n, memo = {}):
-  if n in memo:
-    return memo[n]
-  if n <= 1:
-    return n
-  
-  memo[n] = fibonacciDP(n-1, memo) + fibonacciDP(n-2, memo)
-  return memo[n]`,
-    code: `// Fibonacci with memoization (Dynamic Programming)
+    code: `// Fibonacci with memoization (Dynamic Programming) - ENHANCED
 function fibonacciDP(n, memo = {}) {
-  api.enter('fibonacciDP', { n, memo: Object.keys(memo) });
+  const memoSize = Object.keys(memo).length;
+  const memoHitRate = memoSize > 0 ? 
+    \`\${Math.round((Object.keys(memo).filter(k => parseInt(k) <= n).length / (n + 1)) * 100)}%\` : '0%';
   
+  api.enter('fibonacciDP', { 
+    n, 
+    memoSize,
+    memoKeys: Object.keys(memo).map(k => \`f(\${k})=\${memo[k]}\`),
+    memoHitRate,
+    expectedCallsWithoutMemo: n <= 1 ? 1 : 'exponential',
+    expectedCallsWithMemo: n + 1
+  });
+  
+  // Check if already computed
   if (n in memo) {
-    api.set({ memo: { ...memo } });
+    api.set({ 
+      memoHit: true,
+      retrievedValue: memo[n],
+      fromMemo: \`f(\${n}) = \${memo[n]}\`,
+      timeComplexity: 'O(1)',
+      savedComputation: true
+    });
     api.exit(memo[n]);
     return memo[n];
   }
   
+  // Base cases
   if (n <= 1) {
     memo[n] = n;
-    api.set({ memo: { ...memo } });
+    api.set({ 
+      baseCase: true,
+      computedValue: n,
+      memoUpdated: \`f(\${n}) = \${n}\`,
+      newMemoSize: Object.keys(memo).length,
+      action: \`Stored base case f(\${n}) = \${n}\`
+    });
     api.exit(n);
     return n;
   }
   
-  memo[n] = fibonacciDP(n - 1, memo) + fibonacciDP(n - 2, memo);
-  api.set({ memo: { ...memo } });
-  api.exit(memo[n]);
-  return memo[n];
+  // Recursive case with memoization
+  api.set({ 
+    computingRecursively: true,
+    needsToCompute: \`f(\${n-1}) + f(\${n-2})\`,
+    memoMisses: n - memoSize
+  });
+  
+  const result1 = fibonacciDP(n - 1, memo);
+  const result2 = fibonacciDP(n - 2, memo);
+  const result = result1 + result2;
+  
+  // Store in memo
+  memo[n] = result;
+  
+  api.set({ 
+    computed: \`f(\${n}) = f(\${n-1}) + f(\${n-2}) = \${result1} + \${result2} = \${result}\`,
+    storedInMemo: \`f(\${n}) = \${result}\`,
+    newMemoSize: Object.keys(memo).length,
+    completeMemo: Object.keys(memo).sort((a,b) => a-b).map(k => \`f(\${k})=\${memo[k]}\`),
+    efficiency: \`Saved \${Math.pow(2, n) - (n + 1)} recursive calls\`
+  });
+  
+  api.exit(result);
+  return result;
 }
 
 // Calculate fibonacci(10) with memoization
-fibonacciDP(10);`
+fibonacciDP(10);`,
   },
 
+  // ===============================
+  // KNAPSACK WITH MEMOIZATION - ENHANCED
+  // ===============================
   knapsack: {
     title: "Knapsack with Memoization",
-    description: "Solve the 0/1 knapsack problem using dynamic programming and memoization",
+    description:
+      "Solve the 0/1 knapsack problem using dynamic programming and memoization",
     category: "memoization",
     difficulty: "Advanced",
-    pseudocode: `function knapsack(weights, values, capacity, memo = {}):
-  key = capacity + "," + len(weights)
-  if key in memo:
-    return memo[key]
-  
-  if len(weights) == 0 or capacity == 0:
-    return 0
-  
-  if weights[0] > capacity:
-    result = knapsack(weights[1:], values[1:], capacity, memo)
-  else:
-    result = max(
-      values[0] + knapsack(weights[1:], values[1:], capacity - weights[0], memo),
-      knapsack(weights[1:], values[1:], capacity, memo)
-    )
-  
-  memo[key] = result
-  return result`,
-    code: `// 0/1 Knapsack with memoization (Dynamic Programming)
+    code: `// 0/1 Knapsack with memoization (Dynamic Programming) - ENHANCED
 function knapsack(weights, values, capacity, memo = {}) {
   const key = capacity + ',' + weights.length;
+  const totalItems = weights.length;
+  const totalValue = values.reduce((sum, val) => sum + val, 0);
+  const totalWeight = weights.reduce((sum, wt) => sum + wt, 0);
   
-  api.enter('knapsack', { weights, values, capacity, memo: Object.keys(memo) });
+  api.enter('knapsack', { 
+    remainingItems: weights.length,
+    remainingCapacity: capacity,
+    currentItems: weights.map((w, i) => \`Item\${i+1}(w:\${w}, v:\${values[i]})\`),
+    memoKey: key,
+    memoSize: Object.keys(memo).length,
+    totalPossibleValue: totalValue,
+    totalWeight,
+    utilizationRate: totalWeight > 0 ? \`\${Math.round((capacity / totalWeight) * 100)}%\` : 'N/A'
+  });
   
+  // Check memo
   if (key in memo) {
-    api.set({ memo: { ...memo } });
+    api.set({ 
+      memoHit: true,
+      retrievedValue: memo[key],
+      fromKey: key,
+      savedComputation: true,
+      efficiency: 'O(1) lookup'
+    });
     api.exit(memo[key]);
     return memo[key];
   }
   
+  // Base cases
   if (weights.length === 0 || capacity === 0) {
     memo[key] = 0;
-    api.set({ memo: { ...memo } });
+    api.set({ 
+      baseCase: true,
+      reason: weights.length === 0 ? 'No items left' : 'No capacity left',
+      result: 0,
+      memoUpdated: \`[\${key}] = 0\`
+    });
     api.exit(0);
     return 0;
   }
   
+  const currentItem = {
+    weight: weights[0],
+    value: values[0],
+    valueToWeightRatio: Math.round((values[0] / weights[0]) * 100) / 100
+  };
+  
+  // Current item analysis
+  api.set({ 
+    analyzingItem: \`Item(weight:\${currentItem.weight}, value:\${currentItem.value})\`,
+    valueToWeightRatio: currentItem.valueToWeightRatio,
+    canFit: currentItem.weight <= capacity,
+    remainingItems: weights.length - 1
+  });
+  
   let result;
+  
   if (weights[0] > capacity) {
+    // Item doesn't fit
+    api.set({ 
+      itemTooHeavy: true,
+      itemWeight: weights[0],
+      availableCapacity: capacity,
+      decision: 'EXCLUDE - item too heavy',
+      action: 'Skip this item and try remaining items'
+    });
+    
     result = knapsack(weights.slice(1), values.slice(1), capacity, memo);
   } else {
-    const include = values[0] + knapsack(
+    // Item fits - try both including and excluding
+    api.set({ 
+      itemFits: true,
+      evaluatingOptions: true,
+      option1: 'INCLUDE - take item and reduce capacity',
+      option2: 'EXCLUDE - skip item and keep full capacity'
+    });
+    
+    // Option 1: Include current item
+    const includeValue = values[0] + knapsack(
       weights.slice(1), 
       values.slice(1), 
       capacity - weights[0], 
       memo
     );
-    const exclude = knapsack(weights.slice(1), values.slice(1), capacity, memo);
-    result = Math.max(include, exclude);
+    
+    // Option 2: Exclude current item  
+    const excludeValue = knapsack(weights.slice(1), values.slice(1), capacity, memo);
+    
+    result = Math.max(includeValue, excludeValue);
+    
+    api.set({ 
+      includedItemValue: \`\${values[0]} + \${includeValue - values[0]} = \${includeValue}\`,
+      excludedItemValue: excludeValue,
+      optimalChoice: includeValue > excludeValue ? 'INCLUDE' : 'EXCLUDE',
+      maxValue: result,
+      decision: \`Take \${includeValue > excludeValue ? 'INCLUDE' : 'EXCLUDE'} option\`
+    });
   }
   
+  // Store result in memo
   memo[key] = result;
-  api.set({ memo: { ...memo } });
+  
+  api.set({ 
+    computedValue: result,
+    storedInMemo: \`[\${key}] = \${result}\`,
+    newMemoSize: Object.keys(memo).length,
+    subproblemsolved: true,
+    efficiency: \`Avoided \${Math.pow(2, totalItems) - Object.keys(memo).length} redundant calculations\`
+  });
+  
   api.exit(result);
   return result;
 }
@@ -470,6 +773,7 @@ const weights = [2, 3, 4, 5];
 const values = [3, 4, 5, 6];
 const capacity = 10;
 
-knapsack(weights, values, capacity);`
-  }
+// Expected optimal value: 10 (items with weights 2,3,5 and values 3,4,6)
+knapsack(weights, values, capacity);`,
+  },
 };

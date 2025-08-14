@@ -71,6 +71,8 @@ const DEBUG_ROOT = {
   children: []
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const Playground = () => {
   const [search] = useSearchParams();
   const exampleId = search.get("example");
@@ -111,7 +113,7 @@ const Playground = () => {
   const [language, setLanguage] = useState(getInitialLanguage());
   const [viewMode, setViewMode] = useState("stack");
   const [autoPlay, setAutoPlay] = useState(true);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   const [settings, setSettings] = useState({
     showVariables: true,
     showCallStack: true,
@@ -266,7 +268,7 @@ const Playground = () => {
     setIsPlaying(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isAuthenticated) {
       toast.error("Please log in to save algorithms");
       return;
@@ -276,25 +278,32 @@ const Playground = () => {
     if (!name) return;
 
     try {
-      const algorithm = {
-        id: Date.now().toString(),
-        title: name,
-        code,
-        language,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      const result = saveAlgorithm(algorithm);
-      
-      if (result) {
-        toast.success("Algorithm saved successfully!");
-      } else {
-        toast.error("Failed to save algorithm");
+      const response = await fetch(`${API_BASE_URL}/algorithms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: name,
+          description: '',
+          code,
+          language,
+          category: 'Custom',
+          isPublic: false,
+          tags: [],
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to save algorithm');
       }
+
+      toast.success('Algorithm saved to your dashboard');
     } catch (error) {
       console.error('Save error:', error);
-      toast.error("Failed to save algorithm");
+      toast.error(error instanceof Error ? error.message : 'Failed to save algorithm');
     }
   };
 

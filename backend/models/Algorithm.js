@@ -66,7 +66,12 @@ const algorithmSchema = new mongoose.Schema({
 });
 
 // Index for search functionality
-algorithmSchema.index({ title: 'text', description: 'text', tags: 'text' });
+// Use a custom language override key so our `language` field (programming language)
+// does not conflict with MongoDB's text index language override
+algorithmSchema.index(
+  { title: 'text', description: 'text', tags: 'text' },
+  { name: 'algorithms_text_idx', default_language: 'none', language_override: 'textLanguage' }
+);
 algorithmSchema.index({ author: 1, createdAt: -1 });
 algorithmSchema.index({ category: 1, isPublic: 1 });
 

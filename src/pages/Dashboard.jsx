@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,8 @@ import {
   Edit3, 
   Trash2, 
   Play, 
-  Share2, 
   Bookmark,
+  BookmarkCheck,
   Search,
   Filter,
   Home
@@ -25,9 +25,16 @@ import {
 import Seo from "@/components/seo/Seo";
 import { getSavedAlgorithms, saveAlgorithm, deleteAlgorithm } from "@/lib/storage";
 import { examples } from "@/lib/examples";
+import { useAuth } from "@/contexts/AuthContext";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Dashboard = () => {
-  const [savedAlgorithms, setSavedAlgorithms] = useState([]);
+  const navigate = useNavigate();
+  const { isAuthenticated, token, user } = useAuth();
+  const [savedAlgorithms, setSavedAlgorithms] = useState([]); // legacy local (kept for compatibility)
+  const [dbAlgorithms, setDbAlgorithms] = useState([]);
+  const [isLoadingDb, setIsLoadingDb] = useState(false);
   const [bookmarkedExamples, setBookmarkedExamples] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -47,6 +54,27 @@ const Dashboard = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const loadDbAlgorithms = async () => {
+      if (!isAuthenticated) return;
+      setIsLoadingDb(true);
+      try {
+        const url = `${API_BASE_URL}/algorithms?author=${user.id}&limit=50`;
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to load algorithms');
+        setDbAlgorithms(Array.isArray(data.algorithms) ? data.algorithms : []);
+      } catch (e) {
+        console.error('Failed to load DB algorithms:', e);
+      } finally {
+        setIsLoadingDb(false);
+      }
+    };
+    loadDbAlgorithms();
+  }, [isAuthenticated, token, user]);
+
   const handleCreateAlgorithm = () => {
     if (!newAlgorithm.title.trim()) return;
     
@@ -60,9 +88,63 @@ const Dashboard = () => {
     setIsCreateModalOpen(false);
   };
 
-  const handleDeleteAlgorithm = (id) => {
+  const handleDeleteAlgorithm = async (id) => {
+    // Try backend deletion first; fallback to local storage id
+    try {
+      const res = await fetch(`${API_BASE_URL}/algorithms/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setDbAlgorithms(prev => prev.filter(a => a._id !== id));
+        return;
+      }
+    } catch (e) {
+      // ignore and try local delete
+    }
     if (deleteAlgorithm(id)) {
       setSavedAlgorithms(prev => prev.filter(algo => algo.id !== id));
+    }
+  };
+
+  const handleOpenDbAlgorithm = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/algorithms/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to open algorithm');
+      const algo = data.algorithm;
+      const localId = `db-${algo._id}`;
+      saveAlgorithm({
+        id: localId,
+        title: algo.title,
+        code: algo.code,
+        language: algo.language,
+        createdAt: algo.createdAt,
+        updatedAt: algo.updatedAt
+      });
+      navigate(`/playground?custom=${localId}`);
+    } catch (e) {
+      console.error('Open DB algorithm error:', e);
+    }
+  };
+
+  const toggleDbBookmark = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/algorithms/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to fetch');
+      // For demo, store bookmarked IDs in localStorage (backend endpoint not defined for algo bookmarks)
+      const key = 'recursion_explorer_bookmarked_algorithms';
+      const current = JSON.parse(localStorage.getItem(key) || '[]');
+      const idx = current.indexOf(id);
+      if (idx > -1) current.splice(idx, 1); else current.push(id);
+      localStorage.setItem(key, JSON.stringify(current));
+      // reflect UI by reloading list
+      setDbAlgorithms(prev => prev.map(a => a._id === id ? { ...a, __bookmarked: idx === -1 } : a));
+    } catch (e) {
+      console.error('Bookmark toggle failed', e);
     }
   };
 
@@ -75,8 +157,9 @@ const Dashboard = () => {
     localStorage.setItem('recursion-explorer-bookmarks', JSON.stringify(newBookmarks));
   };
 
-  const filteredAlgorithms = savedAlgorithms.filter(algo => 
-    algo.title && algo.title.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDbAlgorithms = dbAlgorithms.filter(algo => 
+    (algo.title || '').toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (filterCategory === 'all' || (algo.category || 'Custom') === filterCategory)
   );
 
   const bookmarkedExamplesList = Object.entries(examples)
@@ -196,8 +279,10 @@ const Dashboard = () => {
               </Select>
             </div>
 
-            {/* Algorithms Grid */}
-            {filteredAlgorithms.length === 0 ? (
+            {/* Algorithms Grid (from DB) */}
+            {isLoadingDb ? (
+              <Card><CardContent className="py-12 text-center">Loading...</CardContent></Card>
+            ) : filteredDbAlgorithms.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-12">
                   <Code2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -213,8 +298,8 @@ const Dashboard = () => {
               </Card>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredAlgorithms.map((algorithm) => (
-                  <Card key={algorithm.id} className="hover:shadow-lg transition-shadow">
+                {filteredDbAlgorithms.map((algorithm) => (
+                  <Card key={algorithm._id} className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -227,7 +312,15 @@ const Dashboard = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteAlgorithm(algorithm.id)}
+                            onClick={() => toggleDbBookmark(algorithm._id)}
+                            title={algorithm.__bookmarked ? 'Remove bookmark' : 'Bookmark'}
+                          >
+                            {algorithm.__bookmarked ? <BookmarkCheck className="h-4 w-4 text-blue-600" /> : <Bookmark className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteAlgorithm(algorithm._id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -237,19 +330,12 @@ const Dashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto max-h-32">
-                          {algorithm.code}
-                        </pre>
+                        {/* Code hidden in list view; fetched on demand when opening */}
                         
                         <div className="flex gap-2">
-                          <Link to={`/playground?custom=${algorithm.id}`} className="flex-1">
-                            <Button className="w-full gap-2">
-                              <Play className="h-4 w-4" />
-                              Open
-                            </Button>
-                          </Link>
-                          <Button variant="outline" size="sm">
-                            <Share2 className="h-4 w-4" />
+                          <Button className="flex-1 gap-2" onClick={() => handleOpenDbAlgorithm(algorithm._id)}>
+                            <Play className="h-4 w-4" />
+                            Open
                           </Button>
                         </div>
                       </div>

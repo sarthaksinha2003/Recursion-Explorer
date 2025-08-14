@@ -157,6 +157,15 @@ router.post('/', auth, [
       author: req.user.id
     };
 
+    console.log('Create algorithm payload:', {
+      title: algorithmData.title,
+      language: algorithmData.language,
+      codeLength: (algorithmData.code || '').length,
+      category: algorithmData.category,
+      isPublic: algorithmData.isPublic,
+      tagsType: Array.isArray(algorithmData.tags) ? 'array' : typeof algorithmData.tags
+    });
+
     const algorithm = new Algorithm(algorithmData);
     await algorithm.save();
 
@@ -168,7 +177,13 @@ router.post('/', auth, [
     });
   } catch (error) {
     console.error('Create algorithm error:', error);
-    res.status(500).json({ message: 'Server error' });
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: Object.values(error.errors).map(e => ({ field: e.path, message: e.message }))
+      });
+    }
+    res.status(500).json({ message: error.message || 'Server error' });
   }
 });
 

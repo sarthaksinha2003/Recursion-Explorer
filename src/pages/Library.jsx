@@ -15,7 +15,6 @@ const Library = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [bookmarkedExamples, setBookmarkedExamples] = useState([]);
-  const [isLoggedIn] = useState(false); // This will be managed by auth context later
 
   useEffect(() => {
     // Load bookmarked examples from localStorage
@@ -26,8 +25,6 @@ const Library = () => {
   }, []);
 
   const toggleBookmark = (exampleId) => {
-    if (!isLoggedIn) return; // Only allow bookmarking for logged-in users
-    
     const newBookmarks = bookmarkedExamples.includes(exampleId)
       ? bookmarkedExamples.filter(id => id !== exampleId)
       : [...bookmarkedExamples, exampleId];
@@ -120,12 +117,12 @@ const Library = () => {
                           {example.description}
                         </CardDescription>
                       </div>
-                      {isLoggedIn && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => toggleBookmark(example.id)}
                           className="ml-2"
+                          title={bookmarkedExamples.includes(example.id) ? 'Remove bookmark' : 'Bookmark'}
                         >
                           {bookmarkedExamples.includes(example.id) ? (
                             <BookmarkCheck className="h-4 w-4 text-blue-600" />
@@ -133,7 +130,6 @@ const Library = () => {
                             <Bookmark className="h-4 w-4" />
                           )}
                         </Button>
-                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{example.category}</Badge>
