@@ -1,4 +1,4 @@
-// Enhanced tracer.js - Records execution steps for proper call stack visualization
+// Enhanced tracer.js - Fixed call stack pop issue
 // REPLACE YOUR ENTIRE tracer.js FILE WITH THIS CONTENT
 
 export class TreeNode {
@@ -182,49 +182,53 @@ export function runCode(code, input) {
   }
 }
 
-// New: Helper functions for the Playground component
+// FIXED: Helper functions for the Playground component
 
 /**
- * Get call stack state at a specific step number
+ * Get call stack state at a specific step number - FIXED VERSION
  */
 export function getStackAtStep(root, stepNumber) {
   if (!root || !root.executionSteps) {
     return [];
   }
 
-  // Find the execution step at or before the requested step
-  const targetStep = root.executionSteps.find(step => step.stepNumber === stepNumber + 1) ||
-                    root.executionSteps[Math.min(stepNumber, root.executionSteps.length - 1)];
+  // Handle edge cases
+  if (stepNumber < 0) return [];
+  if (stepNumber >= root.executionSteps.length) {
+    return root.executionSteps[root.executionSteps.length - 1]?.stackSnapshot || [];
+  }
 
-  if (!targetStep) {
+  const currentStep = root.executionSteps[stepNumber];
+  
+  if (!currentStep) {
     return [];
   }
 
-  // For EXIT steps, we need to show the state BEFORE the pop
-  if (targetStep.type === StepType.EXIT) {
-    // Find the previous step to get pre-exit stack state
-    const prevStepIndex = root.executionSteps.findIndex(s => s.stepNumber === targetStep.stepNumber) - 1;
-    if (prevStepIndex >= 0) {
-      const prevStep = root.executionSteps[prevStepIndex];
-      // Show the previous stack but mark the exiting function as completed
-      return prevStep.stackSnapshot.map((frame, index, array) => {
-        if (index === array.length - 1 && frame.id === targetStep.nodeId) {
-          return {
-            ...frame,
-            status: 'completed',
-            result: targetStep.data.result
-          };
-        }
-        return frame;
-      });
-    }
+  // FIXED: For EXIT steps, we need to show the stack AFTER the function has completed
+  // but BEFORE it's popped from the stack
+  if (currentStep.type === StepType.EXIT) {
+    // Get the stack snapshot from the current step
+    const stackSnapshot = currentStep.stackSnapshot || [];
+    
+    // Find the frame that's exiting and mark it as completed with result
+    return stackSnapshot.map(frame => {
+      if (frame.id === currentStep.nodeId) {
+        return {
+          ...frame,
+          status: 'completed',
+          result: currentStep.data.result
+        };
+      }
+      return frame;
+    });
   }
 
-  return targetStep.stackSnapshot || [];
+  // For all other step types, return the stack snapshot as-is
+  return currentStep.stackSnapshot || [];
 }
 
 /**
- * Get variables at a specific step number
+ * Get variables at a specific step number - FIXED VERSION
  */
 export function getVariablesAtStep(root, stepNumber) {
   const stack = getStackAtStep(root, stepNumber);
@@ -236,21 +240,28 @@ export function getVariablesAtStep(root, stepNumber) {
   // Get variables from the top frame (current function)
   const topFrame = stack[stack.length - 1];
   
+  // FIXED: Handle case where topFrame might be undefined
+  if (!topFrame || !topFrame.vars) {
+    return null;
+  }
+
   // Merge with parent scope variables (bottom-up, don't override child vars)
   const allVars = {};
   
   // Add parent variables first (so child variables can override them)
   for (let i = 0; i < stack.length - 1; i++) {
     const frame = stack[i];
-    Object.entries(frame.vars || {}).forEach(([key, value]) => {
-      if (!(key in allVars)) {
-        allVars[key] = value;
-      }
-    });
+    if (frame && frame.vars) {
+      Object.entries(frame.vars).forEach(([key, value]) => {
+        if (!(key in allVars)) {
+          allVars[key] = value;
+        }
+      });
+    }
   }
   
   // Add current frame variables last (highest priority)
-  Object.entries(topFrame.vars || {}).forEach(([key, value]) => {
+  Object.entries(topFrame.vars).forEach(([key, value]) => {
     allVars[key] = value;
   });
 
@@ -262,4 +273,20 @@ export function getVariablesAtStep(root, stepNumber) {
  */
 export function getTotalSteps(root) {
   return root?.totalSteps || root?.executionSteps?.length || 0;
+}
+
+/**
+ * ADDED: Helper function to get the next stack state (for proper pop visualization)
+ */
+export function getStackAtNextStep(root, stepNumber) {
+  if (!root || !root.executionSteps) {
+    return [];
+  }
+
+  const nextStepIndex = stepNumber + 1;
+  if (nextStepIndex >= root.executionSteps.length) {
+    return [];
+  }
+
+  return getStackAtStep(root, nextStepIndex);
 }
