@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <style>
+    .node { fill: #4f46e5; }
+    .link { stroke: #4f46e5; stroke-width: 2; }
+    @media (prefers-color-scheme: dark) {
+      .node { fill: #818cf8; }
+      .link { stroke: #818cf8; }
+    }
+  </style>
+  <g transform="translate(16, 16)">
+    <!-- Root node -->
+    <circle class="node" cx="0" cy="0" r="4"/>
+    <!-- Left subtree -->
+    <line class="link" x1="0" y1="0" x2="-8" y2="8"/>
+    <circle class="node" cx="-8" cy="8" r="3"/>
+    <line class="link" x1="-8" y1="8" x2="-12" y2="12"/>
+    <circle class="node" cx="-12" cy="12" r="2"/>
+    <!-- Right subtree -->
+    <line class="link" x1="0" y1="0" x2="8" y2="8"/>
+    <circle class="node" cx="8" cy="8" r="3"/>
+    <line class="link" x1="8" y1="8" x2="12" y2="12"/>
+    <circle class="node" cx="12" cy="12" r="2"/>
+  </g>
+</svg>
