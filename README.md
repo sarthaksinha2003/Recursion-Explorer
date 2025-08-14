@@ -117,8 +117,8 @@ JWT_EXPIRE=7d
 PORT=5000
 NODE_ENV=development
 
-# Frontend
-FRONTEND_URL=http://localhost:5173
+# Frontend (comma-separated for multiple origins)
+FRONTEND_URLS=http://localhost:5173
 ```
 
 ### Frontend Environment Variables
@@ -172,9 +172,9 @@ npx vercel --prod
 ### Backend (Render)
 1. Create a new Web Service on Render
 2. Connect your GitHub repository
-3. Set build command: `cd backend && npm install`
-4. Set start command: `cd backend && npm start`
-5. Add environment variables in Render dashboard
+3. Set build command: `npm ci`
+4. Set start command: `npm start`
+5. Add environment variables in Render dashboard (MONGODB_URI, JWT_SECRET, NODE_ENV=production, FRONTEND_URLS=https://<your-vercel-domain>)
 
 ### Database (MongoDB Atlas)
 1. Create a MongoDB Atlas account
