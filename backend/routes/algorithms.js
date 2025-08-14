@@ -76,7 +76,6 @@ router.get('/', optionalAuth, [
       }
     });
   } catch (error) {
-    console.error('Get algorithms error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -104,7 +103,6 @@ router.get('/:id', optionalAuth, async (req, res) => {
 
     res.json({ algorithm });
   } catch (error) {
-    console.error('Get algorithm error:', error);
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'Invalid algorithm ID' });
     }
@@ -157,14 +155,7 @@ router.post('/', auth, [
       author: req.user.id
     };
 
-    console.log('Create algorithm payload:', {
-      title: algorithmData.title,
-      language: algorithmData.language,
-      codeLength: (algorithmData.code || '').length,
-      category: algorithmData.category,
-      isPublic: algorithmData.isPublic,
-      tagsType: Array.isArray(algorithmData.tags) ? 'array' : typeof algorithmData.tags
-    });
+    // Payload prepared
 
     const algorithm = new Algorithm(algorithmData);
     await algorithm.save();
@@ -176,7 +167,6 @@ router.post('/', auth, [
       algorithm
     });
   } catch (error) {
-    console.error('Create algorithm error:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({
         message: 'Validation failed',
@@ -261,7 +251,6 @@ router.put('/:id', auth, [
       algorithm: updatedAlgorithm
     });
   } catch (error) {
-    console.error('Update algorithm error:', error);
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'Invalid algorithm ID' });
     }
@@ -289,7 +278,6 @@ router.delete('/:id', auth, async (req, res) => {
 
     res.json({ message: 'Algorithm deleted successfully' });
   } catch (error) {
-    console.error('Delete algorithm error:', error);
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'Invalid algorithm ID' });
     }
@@ -326,7 +314,6 @@ router.post('/:id/like', auth, async (req, res) => {
       isLiked: likeIndex === -1
     });
   } catch (error) {
-    console.error('Like algorithm error:', error);
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'Invalid algorithm ID' });
     }

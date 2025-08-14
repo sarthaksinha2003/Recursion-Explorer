@@ -22,9 +22,7 @@ const Index = () => {
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    } catch (error) {}
   };
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");

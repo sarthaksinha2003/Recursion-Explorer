@@ -69,7 +69,6 @@ router.post('/register', [
       }
     });
   } catch (error) {
-    console.error('Registration error:', error);
     res.status(500).json({ message: 'Server error during registration' });
   }
 });
@@ -124,12 +123,10 @@ router.post('/login', [
         id: user._id,
         name: user.name,
         email: user.email,
-        settings: user.settings,
-        bookmarks: user.bookmarks
+        settings: user.settings
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
   }
 });
@@ -146,12 +143,10 @@ router.get('/me', auth, async (req, res) => {
         name: user.name,
         email: user.email,
         settings: user.settings,
-        bookmarks: user.bookmarks,
         role: user.role
       }
     });
   } catch (error) {
-    console.error('Get user error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -194,7 +189,6 @@ router.put('/settings', auth, [
       settings: user.settings
     });
   } catch (error) {
-    console.error('Update settings error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -202,31 +196,6 @@ router.put('/settings', auth, [
 // @route   POST /api/auth/bookmark/:exampleId
 // @desc    Toggle bookmark for an example
 // @access  Private
-router.post('/bookmark/:exampleId', auth, async (req, res) => {
-  try {
-    const { exampleId } = req.params;
-    const user = await User.findById(req.user.id);
-
-    const bookmarkIndex = user.bookmarks.indexOf(exampleId);
-    
-    if (bookmarkIndex > -1) {
-      // Remove bookmark
-      user.bookmarks.splice(bookmarkIndex, 1);
-    } else {
-      // Add bookmark
-      user.bookmarks.push(exampleId);
-    }
-
-    await user.save();
-
-    res.json({
-      message: bookmarkIndex > -1 ? 'Bookmark removed' : 'Bookmark added',
-      bookmarks: user.bookmarks
-    });
-  } catch (error) {
-    console.error('Bookmark error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// Bookmarks feature removed
 
 module.exports = router;

@@ -80,10 +80,7 @@ export function buildSnapshots(code) {
     step.stackSnapshot = createStackSnapshot();
     executionSteps.push(step);
     
-    console.log(`Step ${stepCounter}: ${type} for node ${nodeId}`, {
-      stackDepth: callStack.length,
-      data
-    });
+    // step recorded
     
     return step;
   };
@@ -156,15 +153,10 @@ export function buildSnapshots(code) {
       totalSteps: stepCounter
     };
 
-    console.log('Enhanced execution complete:', {
-      totalSteps: stepCounter,
-      stepsRecorded: executionSteps.length,
-      rootChildren: root?.children?.length || 0
-    });
+    // execution complete
     
     return enhancedRoot;
   } catch (error) {
-    console.error('Code execution failed:', error);
     throw error;
   }
 }
@@ -177,7 +169,6 @@ export function runCode(code, input) {
     // Return the enhanced root node for visualization
     return root;
   } catch (error) {
-    console.error('Code execution failed:', error);
     throw error;
   }
 }

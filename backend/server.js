@@ -55,10 +55,7 @@ mongoose.connect(mongoUri, mongoOptions)
       await Algorithm.collection.dropIndex(idx.name);
     }
     await Algorithm.syncIndexes();
-    console.log('Algorithm indexes synced');
-  } catch (e) {
-    console.error('Index sync error:', e);
-  }
+  } catch (e) {}
 })
 .catch(err => console.error('MongoDB connection error:', err));
 

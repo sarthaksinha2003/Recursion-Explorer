@@ -48,7 +48,6 @@ router.get('/profile', auth, async (req, res) => {
       stats
     });
   } catch (error) {
-    console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -112,7 +111,6 @@ router.put('/profile', auth, [
       }
     });
   } catch (error) {
-    console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -157,7 +155,6 @@ router.get('/dashboard', auth, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get dashboard error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -198,7 +195,6 @@ router.delete('/account', auth, [
 
     res.json({ message: 'Account deleted successfully' });
   } catch (error) {
-    console.error('Delete account error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

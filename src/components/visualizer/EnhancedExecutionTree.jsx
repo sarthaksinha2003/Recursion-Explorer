@@ -9,13 +9,11 @@ const EnhancedExecutionTree = ({ root, width = 1800, height = 1200, settings }) 
   useEffect(() => {
     if (!root || !svgRef.current) return;
 
-    // Debug logging
-    console.log('EnhancedExecutionTree received root:', root);
-    console.log('Root children:', root.children);
+    // Received root
 
     // Safety check - ensure root has valid structure
     if (!root.children || !Array.isArray(root.children)) {
-      console.error('Invalid root structure:', root);
+      return;
       return;
     }
 
@@ -61,7 +59,7 @@ const EnhancedExecutionTree = ({ root, width = 1800, height = 1200, settings }) 
     const requiredWidth = Math.max(minWidth, Math.max(treeSize.width * nodeSpacing, totalNodes * 300) + 2000); // Increased padding
     const requiredHeight = Math.max(minHeight, treeSize.height * levelSpacing + 2000); // Increased padding
     
-    console.log('Tree sizing:', { treeSize, totalNodes, requiredWidth, requiredHeight });
+    // sizing computed
     
     setTreeDimensions({ width: requiredWidth, height: requiredHeight });
 
@@ -89,15 +87,14 @@ const EnhancedExecutionTree = ({ root, width = 1800, height = 1200, settings }) 
     // Create hierarchy with safety check
     const hierarchy = d3.hierarchy(root, (d) => {
       if (d && d.children && Array.isArray(d.children)) {
-        console.log('Processing node:', d.name, 'children:', d.children.length);
+        // processing node
         return d.children;
       }
       return [];
     });
     
     const treeData = tree(hierarchy);
-    console.log('Total descendants after hierarchy:', treeData.descendants().length);
-    treeData.descendants().forEach((d, i) => console.log(`Descendant ${i}:`, d.data.name, 'depth:', d.depth));
+    // descendants computed
     
     // Center the tree within the available space
     const descendants = treeData.descendants();
@@ -131,20 +128,16 @@ const EnhancedExecutionTree = ({ root, width = 1800, height = 1200, settings }) 
       }
     }
     
-    // Debug logging
-    console.log('Tree data:', treeData);
-    console.log('Tree descendants:', descendants);
+    // tree data prepared
 
     // Safety check - ensure we have valid descendants
     if (!descendants || descendants.length === 0) {
-      console.warn('No descendants found in tree data');
       return;
     }
 
     // Safety check - ensure we have valid links
     const links = treeData.links();
     if (!links || links.length === 0) {
-      console.warn('No links found in tree data');
       return;
     }
 
@@ -185,8 +178,7 @@ const EnhancedExecutionTree = ({ root, width = 1800, height = 1200, settings }) 
       .style("stroke-dasharray", "none"); // Removed dash pattern for cleaner lines
 
     // Add nodes - ensure all nodes from descendants are rendered
-    console.log('Rendering nodes, count:', descendants.length);
-    descendants.forEach(d => console.log('Node:', d.data.name, 'depth:', d.depth, 'x:', d.x, 'y:', d.y));
+    // rendering nodes
     
     // Force minimum vertical spacing between nodes to prevent overlap
     const minVerticalSpacing = 450; // Increased from 350 to accommodate larger nodes
@@ -200,7 +192,7 @@ const EnhancedExecutionTree = ({ root, width = 1800, height = 1200, settings }) 
       node.y = node.depth * minVerticalSpacing + 250; // Increased vertical offset from 200 to 250
       
       // Log the adjusted position
-      console.log(`Adjusted node: ${node.data.name}, depth: ${node.depth}, new y: ${node.y}`);
+      // adjusted node position
     });
     
     // Additional spacing adjustments for nodes at the same depth

@@ -35,9 +35,7 @@ const userSchema = new mongoose.Schema({
     autoPlay: { type: Boolean, default: true },
     theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' }
   },
-  bookmarks: [{
-    type: String // Example IDs
-  }],
+  // bookmarks removed
   isActive: {
     type: Boolean,
     default: true

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Home, Search, Bookmark, BookmarkCheck, Play, Filter } from "lucide-react";
+import { Home, Search, Play, Filter } from "lucide-react";
 import { examples } from "@/lib/examples";
 
 const categories = ["Recursion", "Backtracking", "Memoization"];
@@ -14,24 +14,10 @@ const categories = ["Recursion", "Backtracking", "Memoization"];
 const Library = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
-  const [bookmarkedExamples, setBookmarkedExamples] = useState([]);
 
-  useEffect(() => {
-    // Load bookmarked examples from localStorage
-    const bookmarks = localStorage.getItem('recursion-explorer-bookmarks');
-    if (bookmarks) {
-      setBookmarkedExamples(JSON.parse(bookmarks));
-    }
-  }, []);
+  
 
-  const toggleBookmark = (exampleId) => {
-    const newBookmarks = bookmarkedExamples.includes(exampleId)
-      ? bookmarkedExamples.filter(id => id !== exampleId)
-      : [...bookmarkedExamples, exampleId];
-    
-    setBookmarkedExamples(newBookmarks);
-    localStorage.setItem('recursion-explorer-bookmarks', JSON.stringify(newBookmarks));
-  };
+  
 
   // Convert examples object to array for filtering
   const examplesArray = Object.entries(examples).map(([id, example]) => ({
@@ -117,19 +103,7 @@ const Library = () => {
                           {example.description}
                         </CardDescription>
                       </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleBookmark(example.id)}
-                          className="ml-2"
-                          title={bookmarkedExamples.includes(example.id) ? 'Remove bookmark' : 'Bookmark'}
-                        >
-                          {bookmarkedExamples.includes(example.id) ? (
-                            <BookmarkCheck className="h-4 w-4 text-blue-600" />
-                          ) : (
-                            <Bookmark className="h-4 w-4" />
-                          )}
-                        </Button>
+                      
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{example.category}</Badge>

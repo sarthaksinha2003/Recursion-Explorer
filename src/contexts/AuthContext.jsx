@@ -42,7 +42,6 @@ export const AuthProvider = ({ children }) => {
           const data = await apiCall('/auth/me');
           setUser(data.user);
         } catch (error) {
-          console.error('Failed to load user:', error);
           // Clear invalid token
           localStorage.removeItem('token');
           setToken(null);
@@ -119,35 +118,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const toggleBookmark = async (exampleId) => {
-    try {
-      const data = await apiCall(`/auth/bookmark/${exampleId}`, {
-        method: 'POST',
-      });
-
-      if (user) {
-        setUser({
-          ...user,
-          bookmarks: data.bookmarks
-        });
-      }
-
-      toast.success(data.message);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update bookmark';
-      toast.error(message);
-      throw error;
-    }
-  };
+  // bookmarks removed
 
   const refreshUser = async () => {
     if (token) {
       try {
         const data = await apiCall('/auth/me');
         setUser(data.user);
-      } catch (error) {
-        console.error('Failed to refresh user:', error);
-      }
+      } catch (error) {}
     }
   };
 
@@ -160,7 +138,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateSettings,
-    toggleBookmark,
+    
     refreshUser,
   };
 

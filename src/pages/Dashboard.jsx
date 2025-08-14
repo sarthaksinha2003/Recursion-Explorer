@@ -35,7 +35,6 @@ const Dashboard = () => {
   const [savedAlgorithms, setSavedAlgorithms] = useState([]); // legacy local (kept for compatibility)
   const [dbAlgorithms, setDbAlgorithms] = useState([]);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
-  const [bookmarkedExamples, setBookmarkedExamples] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -47,11 +46,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     setSavedAlgorithms(getSavedAlgorithms());
-    // Load bookmarked examples from localStorage
-    const bookmarks = localStorage.getItem('recursion-explorer-bookmarks');
-    if (bookmarks) {
-      setBookmarkedExamples(JSON.parse(bookmarks));
-    }
   }, []);
 
   useEffect(() => {
@@ -65,9 +59,12 @@ const Dashboard = () => {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to load algorithms');
-        setDbAlgorithms(Array.isArray(data.algorithms) ? data.algorithms : []);
+        const list = Array.isArray(data.algorithms) ? data.algorithms : [];
+        const key = 'recursion_explorer_bookmarked_algorithms';
+        const bookmarkedIds = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
+        setDbAlgorithms(list.map(a => ({ ...a, __bookmarked: bookmarkedIds.has(a._id) })));
       } catch (e) {
-        console.error('Failed to load DB algorithms:', e);
+        
       } finally {
         setIsLoadingDb(false);
       }
@@ -125,46 +122,30 @@ const Dashboard = () => {
         updatedAt: algo.updatedAt
       });
       navigate(`/playground?custom=${localId}`);
-    } catch (e) {
-      console.error('Open DB algorithm error:', e);
-    }
+    } catch (e) {}
   };
 
-  const toggleDbBookmark = async (id) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/algorithms/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to fetch');
-      // For demo, store bookmarked IDs in localStorage (backend endpoint not defined for algo bookmarks)
-      const key = 'recursion_explorer_bookmarked_algorithms';
-      const current = JSON.parse(localStorage.getItem(key) || '[]');
-      const idx = current.indexOf(id);
-      if (idx > -1) current.splice(idx, 1); else current.push(id);
-      localStorage.setItem(key, JSON.stringify(current));
-      // reflect UI by reloading list
-      setDbAlgorithms(prev => prev.map(a => a._id === id ? { ...a, __bookmarked: idx === -1 } : a));
-    } catch (e) {
-      console.error('Bookmark toggle failed', e);
+  const toggleDbBookmark = (id) => {
+    const key = 'recursion_explorer_bookmarked_algorithms';
+    const current = JSON.parse(localStorage.getItem(key) || '[]');
+    const idx = current.indexOf(id);
+    if (idx > -1) {
+      current.splice(idx, 1);
+    } else {
+      current.push(id);
     }
+    localStorage.setItem(key, JSON.stringify(current));
+    setDbAlgorithms(prev => prev.map(a => a._id === id ? { ...a, __bookmarked: idx === -1 } : a));
   };
 
-  const toggleBookmark = (exampleId) => {
-    const newBookmarks = bookmarkedExamples.includes(exampleId)
-      ? bookmarkedExamples.filter(id => id !== exampleId)
-      : [...bookmarkedExamples, exampleId];
-    
-    setBookmarkedExamples(newBookmarks);
-    localStorage.setItem('recursion-explorer-bookmarks', JSON.stringify(newBookmarks));
-  };
+  
 
   const filteredDbAlgorithms = dbAlgorithms.filter(algo => 
     (algo.title || '').toLowerCase().includes(searchTerm.toLowerCase()) &&
     (filterCategory === 'all' || (algo.category || 'Custom') === filterCategory)
   );
 
-  const bookmarkedExamplesList = Object.entries(examples)
-    .filter(([key]) => bookmarkedExamples.includes(key))
-    .map(([key, example]) => ({ ...example, id: key }));
+  // bookmarks removed
 
   return (
     <>
@@ -250,7 +231,6 @@ const Dashboard = () => {
         <Tabs defaultValue="algorithms" className="space-y-6">
           <TabsList>
             <TabsTrigger value="algorithms">My Algorithms</TabsTrigger>
-            <TabsTrigger value="bookmarks">Bookmarks</TabsTrigger>
           </TabsList>
 
           <TabsContent value="algorithms" className="space-y-6">
@@ -346,72 +326,7 @@ const Dashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="bookmarks" className="space-y-6">
-            {bookmarkedExamplesList.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <Bookmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No bookmarks yet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Bookmark examples from the library to access them here
-                  </p>
-                  <Link to="/library">
-                    <Button>
-                      <Bookmark className="h-4 w-4 mr-2" />
-                      Browse Library
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {bookmarkedExamplesList.map((example) => (
-                  <Card key={example.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg mb-2">{example.title}</CardTitle>
-                          <CardDescription className="text-sm">
-                            {example.description}
-                          </CardDescription>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleBookmark(example.id)}
-                        >
-                          <Bookmark className="h-4 w-4 text-blue-600 fill-current" />
-                        </Button>
-                      </div>
-                      <div className="flex gap-2">
-                        <Badge variant="secondary">{example.category}</Badge>
-                        <Badge variant="outline">{example.difficulty}</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-medium text-sm mb-2">Pseudocode:</h4>
-                          <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto">
-                            {example.pseudocode}
-                          </pre>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Link to={`/playground?example=${example.id}`} className="flex-1">
-                            <Button className="w-full gap-2">
-                              <Play className="h-4 w-4" />
-                              Visualize
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
+          
         </Tabs>
       </main>
     </>

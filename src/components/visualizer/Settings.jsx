@@ -25,16 +25,12 @@ const Settings = ({
   const exportAsPNG = () => {
     if (window.exportTreeAsPNG) {
       window.exportTreeAsPNG();
-    } else {
-      console.log("Export function not available");
     }
   };
   
   const exportAsSVG = () => {
     if (window.exportTreeAsSVG) {
       window.exportTreeAsSVG();
-    } else {
-      console.log("Export function not available");
     }
   };
 

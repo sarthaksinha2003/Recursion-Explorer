@@ -35,8 +35,7 @@ function fact(n){
 
 // Run the function to generate snapshots
 const result = fact(5);
-api.set({ result });
-console.log('Result:', result);`;
+api.set({ result });`;
 
 const DEFAULT_JAVA = `// Java sample (not executable in this playground)
 class Main {
@@ -150,7 +149,6 @@ const Playground = () => {
     if (!root) return [];
     
     const stack = getStackAtStep(root, step);
-    console.log('>>> getCurrentStack: step =', step, 'stack =', stack);
     
     // Convert to format expected by CallStack component
     return stack.map(frame => ({
@@ -200,10 +198,9 @@ const Playground = () => {
 
   useEffect(() => {
     try {
-      const s = getCurrentStack();
-      console.log('>>> UI getCurrentStack() ->', s);
+      getCurrentStack();
     } catch (e) {
-      console.error('getCurrentStack error', e);
+      // ignore
     }
   }, [step, root]);
 
@@ -213,7 +210,6 @@ const Playground = () => {
 
   const onRun = async () => {
     try {
-      console.log('*** onRun — executing user code ***');
       setRoot(null);
       setStep(0);
       setIsPlaying(false);
@@ -224,10 +220,9 @@ const Playground = () => {
         if (newRoot && typeof newRoot.then === 'function') {
           newRoot = await newRoot;
         }
-      } catch (err) {
-        console.error('runCode error:', err);
-        newRoot = null;
-      }
+        } catch (err) {
+          newRoot = null;
+        }
 
       // Enhanced validation - check for executionSteps
       const isValidRoot = newRoot && 
@@ -239,11 +234,7 @@ const Playground = () => {
       // Expose for console debugging
       window.__LAST_ROOT = finalRoot;
 
-      console.log('Enhanced root created:', {
-        hasExecutionSteps: !!finalRoot.executionSteps,
-        totalSteps: getTotalSteps(finalRoot),
-        children: finalRoot.children?.length || 0
-      });
+      // Enhanced root created
 
       setRoot(finalRoot);
       setStep(0);
@@ -257,8 +248,7 @@ const Playground = () => {
 
       toast.success(`Code executed — ${totalSteps} execution steps recorded`);
     } catch (err) {
-      console.error('onRun error:', err);
-      toast.error('Execution failed (see console)');
+      toast.error('Execution failed');
     }
   };
 
@@ -302,7 +292,6 @@ const Playground = () => {
 
       toast.success('Algorithm saved to your dashboard');
     } catch (error) {
-      console.error('Save error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to save algorithm');
     }
   };
